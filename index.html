@@ -791,12 +791,13 @@ function renderDataRows(idx) {
 function saveAll() {
   const data = { names: [], notes: [], dataRows: dataRows };
   [1,2,3,4].forEach(i => {
-    data.names.push(document.getElementById('name'+i).value);
-    data.notes.push(document.getElementById('note'+i).value);
+    data.names.push((document.getElementById('name'+i)||{value:''}).value);
+    data.notes.push((document.getElementById('note'+i)||{value:''}).value);
   });
   localStorage.setItem('gantt_project', JSON.stringify(data));
   ['label1','label2','label3','bar1','bar2','bar3'].forEach(id => {
     const el = document.getElementById(id);
+    if (!el) return;
     const idx = parseInt(id.slice(-1));
     el.textContent = document.getElementById('name'+idx).value || (['P 计划','D 执行','C 检查·A 处理'][idx-1]);
   });
@@ -913,7 +914,7 @@ function updateDKeywords() {
 // Gist ID — 你的私密 Gist，存储所有配件计划数据
 var GIST_ID = '26d77f07adea4fe60a430667f9d5fe29';
 // GitHub Fine-Grained Token — 只读写了这个 Gist（权限：Gists R&W）
-var GIST_TOKEN = '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';
+var GIST_TOKEN = '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';
 // 访问地址: https://cokerzcc.github.io/ACC-Plan
 
 var _syncTS = 0;
