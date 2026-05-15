@@ -791,13 +791,12 @@ function renderDataRows(idx) {
 function saveAll() {
   const data = { names: [], notes: [], dataRows: dataRows };
   [1,2,3,4].forEach(i => {
-    data.names.push((document.getElementById('name'+i)||{value:''}).value);
-    data.notes.push((document.getElementById('note'+i)||{value:''}).value);
+    data.names.push(document.getElementById('name'+i).value);
+    data.notes.push(document.getElementById('note'+i).value);
   });
   localStorage.setItem('gantt_project', JSON.stringify(data));
   ['label1','label2','label3','bar1','bar2','bar3'].forEach(id => {
     const el = document.getElementById(id);
-    if (!el) return;
     const idx = parseInt(id.slice(-1));
     el.textContent = document.getElementById('name'+idx).value || (['P 计划','D 执行','C 检查·A 处理'][idx-1]);
   });
@@ -914,7 +913,7 @@ function updateDKeywords() {
 // Gist ID — 你的私密 Gist，存储所有配件计划数据
 var GIST_ID = '26d77f07adea4fe60a430667f9d5fe29';
 // GitHub Fine-Grained Token — 只读写了这个 Gist（权限：Gists R&W）
-var GIST_TOKEN = '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';
+var GIST_TOKEN = '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';
 // 访问地址: https://cokerzcc.github.io/ACC-Plan
 
 var _syncTS = 0;
@@ -972,45 +971,32 @@ function _applyServerState(data) {
   });
 }
 
-// Gist: write data — update the single file in the Gist
+// Worker URL — Cloudflare Workers + KV
+const WORKER_URL = 'https://odd-unit-c6e3.keweize.workers.dev/';
+
+// Worker: write data — POST to Cloudflare KV
 async function syncSave() {
   try {
     var state = _getAllState();
-    var body = JSON.stringify({
-      description: '配件计划跨设备同步数据',
-      files: {
-        '配件计划_同步数据.json': { content: JSON.stringify(state, null, 2) }
-      }
-    });
-    var resp = await fetch('https://api.github.com/gists/' + GIST_ID, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + GIST_TOKEN,
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json'
-      },
-      body: body
+    var resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
     });
     if (resp.ok) { _syncShow('☁️ 已同步', true); _syncTS = state._ts; }
     else _syncShow('⚠️ 同步失败', false);
   } catch(e) { _syncShow('⚡ 离线', false); }
 }
 
-// Gist: load data — fetch the Gist and parse the JSON file
+// Worker: load data — GET from Cloudflare KV
 async function syncLoad() {
   try {
-    var resp = await fetch('https://api.github.com/gists/' + GIST_ID, {
-      headers: {
-        'Authorization': 'Bearer ' + GIST_TOKEN,
-        'Accept': 'application/vnd.github+json'
-      },
-      cache: 'no-store'
-    });
+    var resp = await fetch(WORKER_URL);
     if (!resp.ok) return null;
-    var gist = await resp.json();
-    var file = gist.files['配件计划_同步数据.json'];
-    if (!file || !file.content) return null;
-    return JSON.parse(file.content);
+    var data = await resp.json();
+    // 如果 KV 里没有数据，返回 null
+    if (!data || !data.names) return null;
+    return data;
   } catch(e) { return null; }
 }
 
@@ -1077,9 +1063,9 @@ function renderPSteps() {
   }).join('');
 }
 
-// Hook into saveAll/loadAll/clearAll — must preserve sync
+// Hook into saveAll/loadAll/clearAll
 const _psOrigSave = saveAll;
-saveAll = function() { savePSteps(); _psOrigSave(); syncSave(); };
+saveAll = function() { savePSteps(); _psOrigSave(); };
 
 const _psOrigLoad = loadAll;
 loadAll = function() { _psOrigLoad(); loadPSteps(); };
