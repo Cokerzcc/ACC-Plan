@@ -1076,9 +1076,9 @@ function renderPSteps() {
   }).join('');
 }
 
-// Hook into saveAll/loadAll/clearAll
+// Hook into saveAll/loadAll/clearAll — must preserve sync
 const _psOrigSave = saveAll;
-saveAll = function() { savePSteps(); _psOrigSave(); };
+saveAll = function() { savePSteps(); _psOrigSave(); syncSave(); };
 
 const _psOrigLoad = loadAll;
 loadAll = function() { _psOrigLoad(); loadPSteps(); };
