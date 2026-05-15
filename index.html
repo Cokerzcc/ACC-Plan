@@ -948,7 +948,6 @@ function _getAllState() {
 
 function _applyServerState(data) {
   if (!data || data === null) return;
-  if (data._ts && _syncTS > 0 && data._ts <= _syncTS) return;
   _syncTS = data._ts || Date.now();
   [1,2,3,4].forEach(function(i) {
     if (data.names && data.names[i-1] !== undefined) document.getElementById('name'+i).value = data.names[i-1];
