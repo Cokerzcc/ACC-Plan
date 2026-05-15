@@ -635,17 +635,21 @@ textarea:focus { border-color: #007aff; background: #fff; }
   <!-- D -->
   <div class="stage-card d">
     <div class="stage-header">
-      <input class="stage-name-input" id="name2" value="收集现有资讯" placeholder="执行阶段名称">
+      <input class="stage-name-input" id="name2" value="执行 D" placeholder="执行阶段名称">
       <span class="stage-date">5/10 → 5/30</span>
     </div>
     <div class="stage-desc" style="font-size:12px;color:#86868b;margin-bottom:12px;">
       按计划行动
     </div>
 
-    <!-- Keywords summary at top -->
+    <!-- Keywords — 手动输入 -->
     <div class="d-keywords-box">
-      <div class="d-keywords-title">🏷️ 关键词总结</div>
+      <div class="d-keywords-title">🏷️ 关键词</div>
       <div class="d-keywords-tags" id="dKeywordsTags"></div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input id="dKeywordInput" placeholder="输入关键词，回车添加..." style="flex:1;padding:6px 10px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;outline:none;">
+        <button onclick="addDKeyword()" style="padding:6px 12px;border:none;border-radius:8px;background:#007aff;color:#fff;font-size:12px;cursor:pointer;">添加</button>
+      </div>
     </div>
 
     <!-- Subtask 1 -->
@@ -896,17 +900,39 @@ function renderPartners() {
   c.innerHTML = partners.map((p,i) => `<div class="partner-row"><input type="checkbox" class="partner-check" ${p.done?'checked':''} onchange="togglePartner(${i})"><div class="partner-info"><div class="partner-name ${p.done?'done':''}">${escapeHtml(p.name)}</div><textarea class="partner-note" placeholder="对话小结..." oninput="updatePartnerNote(${i},this.value)">${escapeHtml(p.note)}</textarea></div><span class="partner-rm" onclick="removePartner(${i})">✕</span></div>`).join('');
 }
 
-function updateDKeywords() {
+// ====== D 阶段手动关键词 ======
+var dKeywords = [];
+
+function loadDKeywords() {
+  try { const s = localStorage.getItem('gantt_dkeywords'); if (s) dKeywords = JSON.parse(s); } catch(e) {}
+  renderDKeywords();
+}
+function saveDKeywords() { localStorage.setItem('gantt_dkeywords', JSON.stringify(dKeywords)); }
+
+function addDKeyword() {
+  const inp = document.getElementById('dKeywordInput');
+  const t = inp.value.trim();
+  if (!t) return;
+  if (dKeywords.indexOf(t) === -1) dKeywords.push(t);
+  inp.value = '';
+  saveDKeywords(); renderDKeywords(); syncSave();
+}
+
+function removeDKeyword(i) {
+  dKeywords.splice(i, 1);
+  saveDKeywords(); renderDKeywords(); syncSave();
+}
+
+function renderDKeywords() {
   const c = document.getElementById('dKeywordsTags'); if (!c) return;
-  const texts = [];
-  const s1 = document.getElementById('dSub1Note'); if (s1 && s1.value.trim()) texts.push(s1.value);
-  partners.forEach(p => { if (p.name) texts.push(p.name); if (p.note.trim()) texts.push(p.note); });
-  const all = texts.join(' ');
-  if (!all.trim()) { c.innerHTML = '<span style="font-size:12px;color:#c7c7cc;">写笔记后自动提炼关键词</span>'; return; }
-  const tags = extractTags(all);
-  if (!tags.length) { c.innerHTML = '<span style="font-size:12px;color:#c7c7cc;">写更多内容以提炼关键词</span>'; return; }
-  const mf = Math.max(...tags.map(t=>t.freq));
-  c.innerHTML = tags.map(t => { const l = t.freq/mf; return `<span class="tag ${l>0.6?'high':l>0.3?'med':'low'}">${t.word}</span>`; }).join('');
+  if (!dKeywords.length) {
+    c.innerHTML = '<span style="font-size:12px;color:#c7c7cc;">添加关键词...</span>';
+    return;
+  }
+  c.innerHTML = dKeywords.map((k, i) =>
+    '<span class="tag high" style="cursor:default;margin:2px 4px 2px 0;display:inline-block;">' + escapeHtml(k) +
+    '<span onclick="removeDKeyword(' + i + ')" style="margin-left:4px;cursor:pointer;opacity:0.6;">✕</span></span>'
+  ).join('');
 }
 
 // ====== GitHub Gist Sync (跨设备) ======
@@ -940,6 +966,7 @@ function _getAllState() {
     dataRows: dataRows,
     pSteps: pSteps,
     partners: partners,
+    dKeywords: dKeywords,
     dSub1Note: (function() { var s = document.getElementById('dSub1Note'); return s ? s.value : ''; })(),
     npsData: (function() { var s = document.getElementById('npsData'); return s ? s.value : ''; })(),
     _ts: Date.now()
@@ -956,7 +983,8 @@ function _applyServerState(data) {
   });
   if (data.dataRows) { dataRows = data.dataRows; [1,2,3,4].forEach(function(i) { renderDataRows(i); }); }
   if (data.pSteps) { pSteps = data.pSteps; renderPSteps(); savePSteps(); }
-  if (data.partners) { partners = data.partners; renderPartners(); savePartners(); updateDKeywords(); }
+  if (data.partners) { partners = data.partners; renderPartners(); savePartners(); }
+  if (data.dKeywords) { dKeywords = data.dKeywords; saveDKeywords(); renderDKeywords(); }
   var s1 = document.getElementById('dSub1Note');
   if (s1 && data.dSub1Note !== undefined) s1.value = data.dSub1Note;
   var ns = document.getElementById('npsData');
@@ -1013,7 +1041,8 @@ loadAll = async function() {
       var ls = { names: serverData.names, notes: serverData.notes, dataRows: serverData.dataRows, _ts: serverData._ts };
       localStorage.setItem('gantt_project', JSON.stringify(ls));
       if (serverData.pSteps) { pSteps = serverData.pSteps; savePSteps(); renderPSteps(); }
-      if (serverData.partners) { partners = serverData.partners; savePartners(); renderPartners(); updateDKeywords(); }
+      if (serverData.partners) { partners = serverData.partners; savePartners(); renderPartners(); }
+      if (serverData.dKeywords) { dKeywords = serverData.dKeywords; saveDKeywords(); renderDKeywords(); }
       _syncShow('☁️ 已加载', true);
       return;
     }
@@ -1028,11 +1057,11 @@ clearAll = function() { if (!confirm('确定清空所有数据？')) return; par
 
 // Init on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-  loadAll();        // <-- 加载云端数据（会走 async loadAll 去拉 KV）
+  loadAll();        // <-- 加载云端数据
   loadPartners();
+  loadDKeywords();
   const s1 = document.getElementById('dSub1Note');
-  if (s1) s1.addEventListener('input', () => { updateDKeywords(); clearTimeout(window._as); window._as = setTimeout(saveAll, 3000); });
-  setTimeout(updateDKeywords, 100);
+  if (s1) s1.addEventListener('input', () => { clearTimeout(window._as); window._as = setTimeout(saveAll, 3000); });
   const pi = document.getElementById('partnerNameInput');
   if (pi) pi.addEventListener('keydown', e => { if (e.key === 'Enter') addPartner(); });
 });
