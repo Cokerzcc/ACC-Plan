@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>配件计划 · PDCA</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "PingFang SC", -apple-system, sans-serif;
+  background: #f5f5f7;
+  padding: 20px;
+  min-height: 100vh;
+  color: #1d1d1f;
+}
+.container { max-width: 800px; margin: 0 auto; }
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.subtitle { font-size: 14px; color: #86868b; margin-bottom: 24px; }
+
+/* Resource banner */
+.resource-banner {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-left: 4px solid #007aff;
+}
+.resource-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 10px;
+}
+.resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.resource-item {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 4px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.resource-role {
+  font-weight: 500;
+  color: #555;
+  grid-row: 1;
+}
+.resource-name {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+.resource-desc {
+  color: #86868b;
+  grid-column: 2;
+}
+@media (max-width: 400px) {
+  .resource-item { grid-template-columns: 80px 1fr; }
+}
+
+.gantt-wrap {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.gantt-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.timeline-labels {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  text-align: center;
+  font-size: 12px;
+  color: #86868b;
+  margin-bottom: 8px;
+  margin-left: 180px;
+}
+.gantt-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.gantt-row:last-child { margin-bottom: 0; }
+.gantt-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  padding-left: 4px;
+}
+.gantt-label small {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: #86868b;
+  margin-top: 2px;
+}
+.gantt-bar-wrap {
+  position: relative;
+  height: 36px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  overflow: visible;
+}
+.gantt-bar {
+  position: absolute;
+  top: 4px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  padding: 0 8px;
+  min-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-1 { background: #007aff; left: 0%; width: 28%; }
+.bar-2 { background: #34c759; left: 30%; width: 38%; }
+.bar-3 { background: #ff9500; left: 70%; width: 30%; }
+.gantt-bar-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 28%; height: 100%;
+  border-left: 1px dashed #d1d1d6;
+}
+.gantt-bar-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 66%; height: 100%;
+  border-left: 1px dashed #d1d1d6;
+}
+.stage-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-left: 4px solid #c7c7cc;
+}
+.stage-card.p { border-left-color: #007aff; }
+.stage-card.d { border-left-color: #34c759; }
+.stage-card.c { border-left-color: #ff9500; }
+.stage-card.a { border-left-color: #af52de; }
+.stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stage-name-input {
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  color: #1d1d1f;
+  padding: 2px 0;
+  flex: 1;
+  min-width: 120px;
+}
+.stage-name-input:focus { border-bottom: 1.5px solid #007aff; }
+.stage-date {
+  font-size: 12px;
+  color: #86868b;
+  background: #f5f5f7;
+  padding: 2px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.stage-input-wrap { position: relative; }
+.stage-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-height: 28px;
+}
+.tag {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: #f0f0f5;
+  color: #555;
+  animation: tagIn 0.2s ease;
+}
+@keyframes tagIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.tag.high { background: #ffe0e0; color: #c00; }
+.tag.med  { background: #fff3c0; color: #b80; }
+.tag.low  { background: #e0f0e0; color: #282; }
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  background: #f9f9fb;
+  color: #1d1d1f;
+  line-height: 1.5;
+}
+textarea:focus { border-color: #007aff; background: #fff; }
+.data-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.data-item label {
+  min-width: 50px;
+  color: #86868b;
+  font-weight: 500;
+}
+.data-item input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  background: #f9f9fb;
+  color: #1d1d1f;
+}
+.data-item input:focus { border-color: #007aff; background: #fff; }
+.add-data {
+  color: #007aff;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  width: 24px;
+  text-align: center;
+}
+.data-row-rm {
+  color: #ff3b30;
+  cursor: pointer;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-primary { background: #007aff; color: #fff; }
+.btn-secondary { background: #e5e5ea; color: #555; }
+.btn-danger { background: #ff3b30; color: #fff; }
+.export-wrap {
+  margin-top: 20px;
+  background: #1d1d1f;
+  border-radius: 12px;
+  padding: 16px;
+  display: none;
+}
+.export-wrap pre {
+  font-size: 12px;
+  color: #a1a1a6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.export-wrap .export-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.export-wrap .btn { font-size: 12px; padding: 6px 14px; }
+
+/* PDCA flow banner */
+.pdca-flow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.pdca-step {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.pdca-step .letter {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.pdca-step .step-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.pdca-step .step-desc {
+  font-size: 11px;
+  color: #86868b;
+  line-height: 1.4;
+}
+.pdca-step.p { border-left-color: #007aff; }
+.pdca-step.p .letter { color: #007aff; }
+.pdca-step.d { border-left-color: #34c759; }
+.pdca-step.d .letter { color: #34c759; }
+.pdca-step.c { border-left-color: #ff9500; }
+.pdca-step.c .letter { color: #ff9500; }
+.pdca-step.a { border-left-color: #af52de; }
+.pdca-step.a .letter { color: #af52de; }
+
+@media (max-width: 600px) {
+  .pdca-flow { grid-template-columns: 1fr 1fr; }
+  .gantt-row { grid-template-columns: 120px 1fr; }
+  .timeline-labels { margin-left: 132px; }
+  .gantt-label { font-size: 12px; }
+}
+
+/* D stage subtasks */
+.d-keywords-box {
+  background: #f0f7ff;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.d-keywords-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #007aff;
+  margin-bottom: 6px;
+}
+.d-keywords-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.d-keywords-tags .tag {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.subtask {
+  margin-bottom: 16px;
+}
+.subtask:last-of-type { margin-bottom: 0; }
+.subtask-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.subtask-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #34c759;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.subtask-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+.subtask-note {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+  background: #f9f9fb;
+  color: #1d1d1f;
+  line-height: 1.5;
+}
+.subtask-note:focus { border-color: #34c759; background: #fff; }
+.partner-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f2;
+  animation: fadeIn 0.2s ease;
+}
+.partner-row:first-child { padding-top: 0; }
+.partner-check {
+  width: 20px;
+  height: 20px;
+  accent-color: #34c759;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.partner-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.partner-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+.partner-name.done { text-decoration: line-through; color: #86868b; }
+.partner-note {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 36px;
+  outline: none;
+  background: #f9f9fb;
+  color: #1d1d1f;
+  line-height: 1.4;
+}
+.partner-note:focus { border-color: #34c759; }
+.partner-rm {
+  color: #ff3b30;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  padding: 2px;
+}
+.partner-rm:hover { opacity: 0.6; }
+.partner-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+.partner-add input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  background: #f9f9fb;
+}
+.partner-add input:focus { border-color: #34c759; background: #fff; }
+
+
+.p-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  min-height: 20px;
+}
+.p-step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  animation: fadeIn 0.2s ease;
+}
+.p-step-item .step-text { flex: 1; }
+.p-step-rm {
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+.p-step-rm:hover { opacity: 1; }
+.p-step-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+.p-step-add input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #e5e5ea;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  background: #f9f9fb;
+}
+.p-step-add input:focus { border-color: #007aff; background: #fff; }
+.btn-add-step {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #007aff;
+  color: #fff;
+  white-space: nowrap;
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+    <h1>📋 配件提升 NPS 计划</h1>
+    <span style="font-size:12px;color:#86868b;background:#f0f0f5;padding:2px 10px;border-radius:10px;">v1.3</span>
+  </div>
+  <div class="subtitle">PDCA 循环 · 笔记自动提炼关键词</div>
+
+  <!-- Resource banner -->
+  <div class="resource-banner">
+    <div class="resource-title">🧑‍🤝‍🧑 可用资源</div>
+    <div class="resource-list">
+      <div class="resource-item">
+        <span class="resource-role">PZ Manager</span>
+        <span class="resource-name">Lily</span>
+        <span class="resource-desc">管理 Performance（全店目标）</span>
+      </div>
+      <div class="resource-item">
+        <span class="resource-role">NPS Leader</span>
+        <span class="resource-name">Ivy</span>
+        <span class="resource-desc">管理 NPS 循环（联合 Leader 进行 Live NPS）</span>
+      </div>
+      <div class="resource-item">
+        <span class="resource-role">ACC Lead</span>
+        <span class="resource-name">我</span>
+        <span class="resource-desc">管理 ACC 项目（子循环），与 Ivy 对齐 NPS 循环</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDCA Flow -->
+  <div class="pdca-flow">
+    <div class="pdca-step p">
+      <div class="letter">P</div>
+      <div class="step-title">计划</div>
+      <div class="step-desc">分析背景·诊断干扰<br>设定目标·制定策略</div>
+    </div>
+    <div class="pdca-step d">
+      <div class="letter">D</div>
+      <div class="step-title">执行</div>
+      <div class="step-desc">按计划行动</div>
+    </div>
+    <div class="pdca-step c">
+      <div class="letter">C</div>
+      <div class="step-title">检查</div>
+      <div class="step-desc">按里程碑验证<br>发现偏差</div>
+    </div>
+    <div class="pdca-step a">
+      <div class="letter">A</div>
+      <div class="step-title">处理</div>
+      <div class="step-desc">总结经验·处理<br>遗留问题</div>
+    </div>
+  </div>
+
+  <!-- Gantt -->
+  <div class="gantt-wrap">
+    <div class="gantt-title">🗓️ 时间线</div>
+    <div class="timeline-labels">
+      <span>5/10 前</span><span>5/10 → 5/30</span><span>5/30 后</span>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label" id="label1">P 计划</div>
+      <div class="gantt-bar-wrap"><div class="gantt-bar bar-1" id="bar1">P 计划</div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label" id="label2">D 执行</div>
+      <div class="gantt-bar-wrap"><div class="gantt-bar bar-2" id="bar2">D 执行</div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label" id="label3">C 检查 · A 处理</div>
+      <div class="gantt-bar-wrap"><div class="gantt-bar bar-3" id="bar3">C 检查 · A 处理</div></div>
+    </div>
+  </div>
+
+  <!-- P -->
+  <div class="stage-card p">
+    <div class="stage-header">
+      <input class="stage-name-input" id="name1" value="计划 P" placeholder="计划阶段名称">
+      <span class="stage-date">5/10 前</span>
+    </div>
+    <div class="stage-desc" style="font-size:12px;color:#86868b;margin-bottom:12px;">
+      分析背景 ➡️ 诊断干扰因素 ➡️ 设定可验证的目标 ➡️ 制定策略与行动
+    </div>
+    <div class="stage-input-wrap">
+      <div id="pStepList" class="p-step-list"></div>
+      <div class="p-step-add">
+        <input type="text" id="pStepInput" placeholder="添加步骤，例如：分析背景..." style="flex:1;">
+        <button class="btn btn-add-step" onclick="addPStep()">＋ 添加</button>
+      </div>
+    </div>
+    <div class="stage-data" id="data1">
+      <div class="data-item"><label>📊 数据</label><input placeholder="例如：NPS 当前值 62" id="dataInput1"><span class="add-data" onclick="addData(1)">＋</span></div>
+    </div>
+  </div>
+
+  <!-- D -->
+  <div class="stage-card d">
+    <div class="stage-header">
+      <input class="stage-name-input" id="name2" value="收集现有资讯" placeholder="执行阶段名称">
+      <span class="stage-date">5/10 → 5/30</span>
+    </div>
+    <div class="stage-desc" style="font-size:12px;color:#86868b;margin-bottom:12px;">
+      按计划行动
+    </div>
+
+    <!-- Keywords summary at top -->
+    <div class="d-keywords-box">
+      <div class="d-keywords-title">🏷️ 关键词总结</div>
+      <div class="d-keywords-tags" id="dKeywordsTags"></div>
+    </div>
+
+    <!-- Subtask 1 -->
+    <div class="subtask">
+      <div class="subtask-header">
+        <span class="subtask-num">1</span>
+        <span class="subtask-title">分析现有 NPS 和销量</span>
+      </div>
+      <textarea class="subtask-note" id="dSub1Note" placeholder="小结..." style="min-height:60px;"></textarea>
+    </div>
+
+    <!-- Subtask 2: 与 NPS 特长伙伴对话 -->
+    <div class="subtask">
+      <div class="subtask-header">
+        <span class="subtask-num">2</span>
+        <span class="subtask-title">与 NPS 特长伙伴对话</span>
+      </div>
+      <div id="partnerList">
+        <!-- Partner rows inserted here -->
+      </div>
+      <div class="partner-add">
+        <input type="text" id="partnerNameInput" placeholder="添加伙伴姓名..." style="flex:1;">
+        <button class="btn" style="background:#007aff;color:#fff;padding:8px 16px;border:none;border-radius:8px;font-size:13px;cursor:pointer;" onclick="addPartner()">＋ 添加</button>
+      </div>
+    </div>
+
+    <!-- Additional data rows -->
+    <div class="stage-data" id="data2" style="margin-top:12px;">
+      <div class="data-item"><label>📊 数据</label><input placeholder="其他数据..." id="dataInput2"><span class="add-data" onclick="addData(2)">＋</span></div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="stage-card c">
+    <div class="stage-header">
+      <input class="stage-name-input" id="name3" value="检查 C" placeholder="检查阶段名称">
+      <span class="stage-date">5/30 附近</span>
+    </div>
+    <div class="stage-desc" style="font-size:12px;color:#86868b;margin-bottom:12px;">
+      根据里程碑验证进度，发现偏差
+    </div>
+    <div class="stage-input-wrap">
+      <div class="stage-tags" id="tags3"></div>
+      <textarea id="note3" placeholder="写工作笔记..."></textarea>
+    </div>
+    <div class="stage-data" id="data3">
+      <div class="data-item"><label>📊 数据</label><input placeholder="例如：NPS 验证结果" id="dataInput3"><span class="add-data" onclick="addData(3)">＋</span></div>
+    </div>
+  </div>
+
+  <!-- A -->
+  <div class="stage-card a">
+    <div class="stage-header">
+      <input class="stage-name-input" id="name4" value="处理 A" placeholder="处理阶段名称">
+      <span class="stage-date">5/30 后</span>
+    </div>
+    <div class="stage-desc" style="font-size:12px;color:#86868b;margin-bottom:12px;">
+      总结成功经验，处理遗留问题
+    </div>
+    <div class="stage-input-wrap">
+      <div class="stage-tags" id="tags4"></div>
+      <textarea id="note4" placeholder="写工作笔记..."></textarea>
+    </div>
+    <div class="stage-data" id="data4">
+      <div class="data-item"><label>📊 数据</label><input placeholder="例如：标准化文档编写" id="dataInput4"><span class="add-data" onclick="addData(4)">＋</span></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="saveAll()">💾 保存</button>
+    <button class="btn btn-secondary" onclick="exportData()">📤 导出</button>
+    <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
+  </div>
+
+  <div class="export-wrap" id="exportWrap">
+    <pre id="exportContent"></pre>
+    <div class="export-actions">
+      <button class="btn btn-primary" onclick="copyExport()">📋 复制</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('exportWrap').style.display='none'">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STOP_WORDS = new Set([
+  '的','了','在','是','我','有','和','就','不','人','都','一','一个','上','也','很',
+  '到','说','要','去','你','会','着','没有','看','好','自己','这','他','她','它',
+  '们','那','些','什么','怎么','因为','所以','但是','可以','这个','那个','还',
+  '被','把','让','从','对','与','而','或','及','等','之','为','所','如',
+  '将','已','能','做','吗','啊','呢','哦','嗯','哈','呀','吧','嘛','的'
+]);
+
+function extractTags(text) {
+  if (!text.trim()) return [];
+  const raw = text.replace(/[^\u4e00-\u9fff\w]/g, ' ').replace(/\s+/g, ' ');
+  const grams = new Map();
+  for (let len of [3, 2]) {
+    for (let i = 0; i <= raw.length - len; i++) {
+      const gram = raw.slice(i, i + len).trim();
+      if (gram.length < len || STOP_WORDS.has(gram)) continue;
+      grams.set(gram, (grams.get(gram) || 0) + 1);
+    }
+  }
+  return [...grams.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([word, freq]) => ({ word, freq }));
+}
+
+[1,2,3,4].forEach(i => {
+  const ta = document.getElementById('note'+i);
+  const td = document.getElementById('tags'+i);
+  if (!ta || !td) return;
+  ta.addEventListener('input', () => {
+    const tags = extractTags(ta.value);
+    const maxFreq = tags.length ? Math.max(...tags.map(t => t.freq)) : 1;
+    td.innerHTML = tags.map(t => {
+      const level = t.freq / maxFreq;
+      return `<span class="tag ${level > 0.6 ? 'high' : level > 0.3 ? 'med' : 'low'}">${t.word}</span>`;
+    }).join('');
+  });
+});
+
+var dataRows = { 1: [], 2: [], 3: [], 4: [] };
+function addData(idx) {
+  const input = document.getElementById('dataInput'+idx);
+  const val = input.value.trim();
+  if (!val) return;
+  dataRows[idx].push(val);
+  input.value = '';
+  renderDataRows(idx);
+  syncSave();
+}
+function removeData(idx, di) { dataRows[idx].splice(di, 1); renderDataRows(idx); }
+function renderDataRows(idx) {
+  const container = document.getElementById('data'+idx);
+  let html = `<div class="data-item"><label>📊 数据</label><input placeholder="添加数据..." id="dataInput${idx}"><span class="add-data" onclick="addData(${idx})">＋</span></div>`;
+  dataRows[idx].forEach((val, di) => {
+    html += `<div class="data-item" style="margin-top:4px;"><label></label><span style="flex:1;font-size:13px;color:#555;">📌 ${val}</span><span class="data-row-rm" onclick="removeData(${idx},${di})">✕</span></div>`;
+  });
+  container.innerHTML = html;
+  document.getElementById('dataInput'+idx).addEventListener('keydown', e => { if (e.key === 'Enter') addData(idx); });
+}
+[1,2,3,4].forEach(i => renderDataRows(i));
+
+function saveAll() {
+  const data = { names: [], notes: [], dataRows: dataRows };
+  [1,2,3,4].forEach(i => {
+    data.names.push(document.getElementById('name'+i).value);
+    data.notes.push(document.getElementById('note'+i).value);
+  });
+  localStorage.setItem('gantt_project', JSON.stringify(data));
+  ['label1','label2','label3','bar1','bar2','bar3'].forEach(id => {
+    const el = document.getElementById(id);
+    const idx = parseInt(id.slice(-1));
+    el.textContent = document.getElementById('name'+idx).value || (['P 计划','D 执行','C 检查·A 处理'][idx-1]);
+  });
+}
+
+function loadAll() {
+  try {
+    const data = JSON.parse(localStorage.getItem('gantt_project'));
+    if (!data) return;
+    [1,2,3,4].forEach(i => {
+      document.getElementById('name'+i).value = data.names[i-1] || '';
+      document.getElementById('note'+i).value = data.notes[i-1] || '';
+    });
+    if (data.dataRows) { dataRows = data.dataRows; [1,2,3,4].forEach(i => renderDataRows(i)); }
+    saveAll();
+  } catch(e) {}
+}
+loadAll();
+
+[1,2,3,4].forEach(i => {
+  var ne = document.getElementById('note'+i);
+  if (ne) ne.addEventListener('input', () => { clearTimeout(window._as); window._as = setTimeout(saveAll, 3000); });
+  document.getElementById('name'+i).addEventListener('input', saveAll);
+});
+
+function clearAll() {
+  if (!confirm('确定清空？')) return;
+  localStorage.removeItem('gantt_project');
+  dataRows = { 1: [], 2: [], 3: [], 4: [] };
+  [1,2,3,4].forEach(i => {
+    document.getElementById('note'+i).value = '';
+    document.getElementById('tags'+i).innerHTML = '';
+    renderDataRows(i);
+  });
+  document.getElementById('name1').value = '计划 P';
+  document.getElementById('name2').value = '执行 D';
+  document.getElementById('name3').value = '检查 C';
+  document.getElementById('name4').value = '处理 A';
+  saveAll();
+}
+
+function exportData() {
+  let text = `# 配件提升 NPS 计划\n\n## PDCA 循环\n\n| 阶段 | 内容 | 时间 |\n|------|------|------|\n`;
+  const stages = [
+    ['name1','5/10 前','分析背景 ➡️ 诊断干扰因素 ➡️ 设定可验证的目标 ➡️ 制定策略与行动'],
+    ['name2','5/10 → 5/30','按计划行动'],
+    ['name3','5/30 附近','根据里程碑验证进度，发现偏差'],
+    ['name4','5/30 后','总结成功经验，处理遗留问题']
+  ];
+  stages.forEach(([id, date, desc]) => {
+    text += `| ${document.getElementById(id).value || '阶段'} | ${desc} | ${date} |\n`;
+  });
+  text += '\n';
+  const letters = ['P','D','C','A'];
+  [1,2,3,4].forEach(i => {
+    text += `## ${letters[i-1]}. ${document.getElementById('name'+i).value || '阶段'}\n\n`;
+    if (document.getElementById('note'+i).value.trim()) text += `**笔记：** ${document.getElementById('note'+i).value}\n\n`;
+    if (dataRows[i].length) text += `**数据：**\n${dataRows[i].map(d => `- ${d}`).join('\n')}\n\n`;
+  });
+  document.getElementById('exportContent').textContent = text;
+  document.getElementById('exportWrap').style.display = 'block';
+}
+
+function copyExport() {
+  const text = document.getElementById('exportContent').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('✅ 已复制')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    alert('✅ 已复制');
+  });
+}
+
+// ====== Stage 2: Partners ======
+var partners = [];
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+function loadPartners() {
+  try { const s = localStorage.getItem('gantt_partners'); if (s) partners = JSON.parse(s); } catch(e) {}
+  renderPartners();
+}
+function savePartners() { localStorage.setItem('gantt_partners', JSON.stringify(partners)); }
+
+function addPartner() {
+  const inp = document.getElementById('partnerNameInput');
+  const n = inp.value.trim(); if (!n) return;
+  partners.push({name:n, done:false, note:''});
+  inp.value = ''; savePartners(); renderPartners(); updateDKeywords(); syncSave();
+}
+function removePartner(i) { partners.splice(i,1); savePartners(); renderPartners(); updateDKeywords(); syncSave(); }
+function togglePartner(i) { partners[i].done = !partners[i].done; savePartners(); renderPartners(); syncSave(); }
+function updatePartnerNote(i, v) { partners[i].note = v; savePartners(); updateDKeywords(); syncSave(); }
+
+function renderPartners() {
+  const c = document.getElementById('partnerList'); if (!c) return;
+  if (!partners.length) { c.innerHTML = '<div style="font-size:13px;color:#c7c7cc;padding:8px 0;">添加伙伴姓名</div>'; return; }
+  c.innerHTML = partners.map((p,i) => `<div class="partner-row"><input type="checkbox" class="partner-check" ${p.done?'checked':''} onchange="togglePartner(${i})"><div class="partner-info"><div class="partner-name ${p.done?'done':''}">${escapeHtml(p.name)}</div><textarea class="partner-note" placeholder="对话小结..." oninput="updatePartnerNote(${i},this.value)">${escapeHtml(p.note)}</textarea></div><span class="partner-rm" onclick="removePartner(${i})">✕</span></div>`).join('');
+}
+
+function updateDKeywords() {
+  const c = document.getElementById('dKeywordsTags'); if (!c) return;
+  const texts = [];
+  const s1 = document.getElementById('dSub1Note'); if (s1 && s1.value.trim()) texts.push(s1.value);
+  partners.forEach(p => { if (p.name) texts.push(p.name); if (p.note.trim()) texts.push(p.note); });
+  const all = texts.join(' ');
+  if (!all.trim()) { c.innerHTML = '<span style="font-size:12px;color:#c7c7cc;">写笔记后自动提炼关键词</span>'; return; }
+  const tags = extractTags(all);
+  if (!tags.length) { c.innerHTML = '<span style="font-size:12px;color:#c7c7cc;">写更多内容以提炼关键词</span>'; return; }
+  const mf = Math.max(...tags.map(t=>t.freq));
+  c.innerHTML = tags.map(t => { const l = t.freq/mf; return `<span class="tag ${l>0.6?'high':l>0.3?'med':'low'}">${t.word}</span>`; }).join('');
+}
+
+// ====== GitHub Gist Sync (跨设备) ======
+// Gist ID — 你的私密 Gist，存储所有配件计划数据
+var GIST_ID = '26d77f07adea4fe60a430667f9d5fe29';
+// GitHub Fine-Grained Token — 只读写了这个 Gist（权限：Gists R&W）
+var GIST_TOKEN = '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';
+// 访问地址: https://cokerzcc.github.io/ACC-Plan
+
+var _syncTS = 0;
+var _syncStatusEl = null;
+function _syncShow(msg, ok) {
+  if (!_syncStatusEl) {
+    _syncStatusEl = document.createElement('div');
+    _syncStatusEl.id = '__syncS';
+    _syncStatusEl.style.cssText = 'position:fixed;top:12px;right:12px;font-size:11px;padding:4px 10px;border-radius:20px;z-index:999;font-family:-apple-system;pointer-events:none;transition:opacity 0.5s';
+    document.body.appendChild(_syncStatusEl);
+  }
+  _syncStatusEl.textContent = msg;
+  _syncStatusEl.style.background = ok === true ? '#34c759' : ok === false ? '#ff3b30' : '#007aff';
+  _syncStatusEl.style.color = '#fff';
+  _syncStatusEl.style.opacity = '0.9';
+  clearTimeout(_syncStatusEl._h);
+  _syncStatusEl._h = setTimeout(function() { if (_syncStatusEl) _syncStatusEl.style.opacity = '0'; }, 2500);
+}
+
+function _getAllState() {
+  return {
+    names: [1,2,3,4].map(function(i) { return document.getElementById('name'+i).value; }),
+    notes: [1,2,3,4].map(function(i) { var n = document.getElementById('note'+i); return n ? n.value : ''; }),
+    dataRows: dataRows,
+    pSteps: pSteps,
+    partners: partners,
+    dSub1Note: (function() { var s = document.getElementById('dSub1Note'); return s ? s.value : ''; })(),
+    npsData: (function() { var s = document.getElementById('npsData'); return s ? s.value : ''; })(),
+    _ts: Date.now()
+  };
+}
+
+function _applyServerState(data) {
+  if (!data || data === null) return;
+  if (data._ts && _syncTS > 0 && data._ts <= _syncTS) return;
+  _syncTS = data._ts || Date.now();
+  [1,2,3,4].forEach(function(i) {
+    if (data.names && data.names[i-1] !== undefined) document.getElementById('name'+i).value = data.names[i-1];
+    var n = document.getElementById('note'+i);
+    if (n && data.notes && data.notes[i-1] !== undefined) n.value = data.notes[i-1];
+  });
+  if (data.dataRows) { dataRows = data.dataRows; [1,2,3,4].forEach(function(i) { renderDataRows(i); }); }
+  if (data.pSteps) { pSteps = data.pSteps; renderPSteps(); savePSteps(); }
+  if (data.partners) { partners = data.partners; renderPartners(); savePartners(); updateDKeywords(); }
+  var s1 = document.getElementById('dSub1Note');
+  if (s1 && data.dSub1Note !== undefined) s1.value = data.dSub1Note;
+  var ns = document.getElementById('npsData');
+  if (ns && data.npsData !== undefined) ns.value = data.npsData;
+  savePartners(); savePSteps();
+  [1,2,3,4].forEach(function(i) {
+    ['label'+i,'bar'+i].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = document.getElementById('name'+i).value || (['P 计划','D 执行','C 检查·A 处理'][i-1] || '');
+    });
+  });
+}
+
+// Worker URL — Cloudflare Workers + KV
+const WORKER_URL = 'https://odd-unit-c6e3.keweize.workers.dev/';
+
+// Worker: write data — POST to Cloudflare KV
+async function syncSave() {
+  try {
+    var state = _getAllState();
+    var resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    if (resp.ok) { _syncShow('☁️ 已同步', true); _syncTS = state._ts; }
+    else _syncShow('⚠️ 同步失败', false);
+  } catch(e) { _syncShow('⚡ 离线', false); }
+}
+
+// Worker: load data — GET from Cloudflare KV
+async function syncLoad() {
+  try {
+    var resp = await fetch(WORKER_URL);
+    if (!resp.ok) return null;
+    var data = await resp.json();
+    // 如果 KV 里没有数据，返回 null
+    if (!data || !data.names) return null;
+    return data;
+  } catch(e) { return null; }
+}
+
+// Hook into saveAll
+const _origSaveAll = saveAll;
+saveAll = function() { savePartners(); _origSaveAll(); syncSave(); };
+
+// Hook into loadAll
+const _origLoadAll = loadAll;
+loadAll = async function() {
+  try {
+    var serverData = await syncLoad();
+    if (serverData) {
+      _applyServerState(serverData);
+      var ls = { names: serverData.names, notes: serverData.notes, dataRows: serverData.dataRows, _ts: serverData._ts };
+      localStorage.setItem('gantt_project', JSON.stringify(ls));
+      _syncShow('☁️ 已加载', true);
+      return;
+    }
+  } catch(e) {}
+  _origLoadAll();
+  loadPartners();
+};
+
+// Hook into clearAll
+const _origClearAll = clearAll;
+clearAll = function() { if (!confirm('确定清空所有数据？')) return; partners = []; savePartners(); renderPartners(); _origClearAll(); };
+
+// Init on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  loadPartners();
+  const s1 = document.getElementById('dSub1Note');
+  if (s1) s1.addEventListener('input', () => { updateDKeywords(); clearTimeout(window._as); window._as = setTimeout(saveAll, 3000); });
+  setTimeout(updateDKeywords, 100);
+  const pi = document.getElementById('partnerNameInput');
+  if (pi) pi.addEventListener('keydown', e => { if (e.key === 'Enter') addPartner(); });
+});
+
+
+// ====== Stage 1: P Steps ======
+var pSteps = [];
+const PSTEP_COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5ac8fa', '#ffd60a', '#bf5af2'];
+
+function loadPSteps() {
+  try { const s = localStorage.getItem('gantt_psteps'); if (s) pSteps = JSON.parse(s); } catch(e) {}
+  renderPSteps();
+}
+function savePSteps() { localStorage.setItem('gantt_psteps', JSON.stringify(pSteps)); }
+
+function addPStep() {
+  const inp = document.getElementById('pStepInput'); const t = inp.value.trim(); if (!t) return;
+  pSteps.push({ text: t });
+  inp.value = ''; savePSteps(); renderPSteps(); syncSave();
+}
+
+function removePStep(i) { pSteps.splice(i,1); savePSteps(); renderPSteps(); syncSave(); }
+
+function renderPSteps() {
+  const c = document.getElementById('pStepList'); if (!c) return;
+  if (!pSteps.length) { c.innerHTML = '<div style="font-size:13px;color:#c7c7cc;padding:8px 0;">添加计划步骤...</div>'; return; }
+  c.innerHTML = pSteps.map((s, i) => {
+    const color = PSTEP_COLORS[i % PSTEP_COLORS.length];
+    return '<div class="p-step-item" style="background:' + color + '"><span class="step-text">' + escapeHtml(s.text) + '</span><span class="p-step-rm" onclick="removePStep(' + i + ')">✕</span></div>';
+  }).join('');
+}
+
+// Hook into saveAll/loadAll/clearAll
+const _psOrigSave = saveAll;
+saveAll = function() { savePSteps(); _psOrigSave(); };
+
+const _psOrigLoad = loadAll;
+loadAll = function() { _psOrigLoad(); loadPSteps(); };
+
+const _psOrigClear = clearAll;
+clearAll = function() { pSteps = []; savePSteps(); renderPSteps(); _psOrigClear(); };
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadPSteps();
+  const pi = document.getElementById('pStepInput');
+  if (pi) pi.addEventListener('keydown', e => { if (e.key === 'Enter') addPStep(); });
+});
+
+</script>
+</body>
+</html>
