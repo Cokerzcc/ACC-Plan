@@ -1028,6 +1028,7 @@ clearAll = function() { if (!confirm('确定清空所有数据？')) return; par
 
 // Init on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+  loadAll();        // <-- 加载云端数据（会走 async loadAll 去拉 KV）
   loadPartners();
   const s1 = document.getElementById('dSub1Note');
   if (s1) s1.addEventListener('input', () => { updateDKeywords(); clearTimeout(window._as); window._as = setTimeout(saveAll, 3000); });
