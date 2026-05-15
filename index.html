@@ -1012,6 +1012,8 @@ loadAll = async function() {
       _applyServerState(serverData);
       var ls = { names: serverData.names, notes: serverData.notes, dataRows: serverData.dataRows, _ts: serverData._ts };
       localStorage.setItem('gantt_project', JSON.stringify(ls));
+      if (serverData.pSteps) { pSteps = serverData.pSteps; savePSteps(); renderPSteps(); }
+      if (serverData.partners) { partners = serverData.partners; savePartners(); renderPartners(); updateDKeywords(); }
       _syncShow('☁️ 已加载', true);
       return;
     }
